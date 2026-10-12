@@ -1,0 +1,82 @@
+{
+  "app.py": {
+    "live_sha256": "3d66be77a1df1d29a33890716fc7d3a89d33e2f98d9b16c52336338d6e442a68",
+    "export_sha256": "3d66be77a1df1d29a33890716fc7d3a89d33e2f98d9b16c52336338d6e442a68",
+    "git_blob_sha": "b514081d81069ba87eafc9ace938fad00b90c056"
+  },
+  "zoya_desktop.py": {
+    "live_sha256": "fd755c1bcbe7a76e7eed67583ac8a3c1d9e61b533ff51a09ab0588b02d823f73",
+    "export_sha256": "fd755c1bcbe7a76e7eed67583ac8a3c1d9e61b533ff51a09ab0588b02d823f73",
+    "git_blob_sha": "89f6f857988dbc7655f82770fb72cf23de2e4337"
+  },
+  "natural_voice.py": {
+    "live_sha256": "01c9d4b6cc7405e491a53f95352a43d3d32ce13f2d11ed317f5705ae0712d407",
+    "export_sha256": "01c9d4b6cc7405e491a53f95352a43d3d32ce13f2d11ed317f5705ae0712d407",
+    "git_blob_sha": "c0efbd40b6cd5fcbe288b22643e5af11b19dc45d"
+  },
+  "voice_pipeline_hardening.py": {
+    "live_sha256": "9c0e79e9421627ecb2c1e7f2b4d7c70c332354ad1dfc5bbe3dc112c0daf4fb7f",
+    "export_sha256": "9c0e79e9421627ecb2c1e7f2b4d7c70c332354ad1dfc5bbe3dc112c0daf4fb7f",
+    "git_blob_sha": "f69564c1df5cbd9dfcb29460c7407f112a1824ed"
+  },
+  "advanced_stt.py": {
+    "live_sha256": "69ae20892bfd502df7bf8c68a7e1e9e7e2440265c13cdd204bd4a1873b96b299",
+    "export_sha256": "69ae20892bfd502df7bf8c68a7e1e9e7e2440265c13cdd204bd4a1873b96b299",
+    "git_blob_sha": "90ad63fd5ae81b6f263ee00aa43821aacce9c0a2"
+  },
+  "whisper_backend.py": {
+    "live_sha256": "2282fb3d2f95ce046d30db130ca7c673e0e567a119e2bd3e38902a82eeca0dd8",
+    "export_sha256": "2282fb3d2f95ce046d30db130ca7c673e0e567a119e2bd3e38902a82eeca0dd8",
+    "git_blob_sha": "b64bb046ce7693f77c8bbe1240df12c6284b9172"
+  },
+  "voice_quota.py": {
+    "live_sha256": "89f3835c899cb6e35899e4074994ccae415744699a1cd742fcb6996c5de5f6e4",
+    "export_sha256": "89f3835c899cb6e35899e4074994ccae415744699a1cd742fcb6996c5de5f6e4",
+    "git_blob_sha": "5e7334bbd9ea0ddcb55e5961ca0607f4a090840f"
+  },
+  "queue_sync.py": {
+    "live_sha256": "36b7603ba7b8ec5260dc2251b472f6d0da334184d944fd5ad9492b3a5799c0b6",
+    "export_sha256": "36b7603ba7b8ec5260dc2251b472f6d0da334184d944fd5ad9492b3a5799c0b6",
+    "git_blob_sha": "1f3a6840a4f012f16848a3349fc00c02e76619a1"
+  },
+  "skales_bridge.py": {
+    "live_sha256": "efca7524eecb404262130b418ed5de647d47a0ac2e81eac1ec95c4fa93eae6cc",
+    "export_sha256": "efca7524eecb404262130b418ed5de647d47a0ac2e81eac1ec95c4fa93eae6cc",
+    "git_blob_sha": "b7bb12c42c8a5555cf4c47026aa4b6ca683f7849"
+  },
+  "skales_event_validation.py": {
+    "live_sha256": "bcb95603e746e5b7e869b6360c8e370fecbc5b9f55eabab6cf49cff2f1c54678",
+    "export_sha256": "bcb95603e746e5b7e869b6360c8e370fecbc5b9f55eabab6cf49cff2f1c54678",
+    "git_blob_sha": "b7935b0e590c11ab7bb3c3e2c1d66d424297ee40"
+  },
+  "conversation.py": {
+    "live_sha256": "6fdd804a2752e77cfeae81d47171f0e04ae5878356bb425ed41d18fb41ac404c",
+    "export_sha256": "6fdd804a2752e77cfeae81d47171f0e04ae5878356bb425ed41d18fb41ac404c",
+    "git_blob_sha": "ddee3bf1192eef877ad07c1ef7e41ae453a25e87"
+  },
+  "conversation_style.py": {
+    "live_sha256": "5f4c8f2906668cb82ab7f07a3c70bba3dd1c9ab845f3e5766e1b6b5b7226b343",
+    "export_sha256": "5f4c8f2906668cb82ab7f07a3c70bba3dd1c9ab845f3e5766e1b6b5b7226b343",
+    "git_blob_sha": "a669c3274452b0109722b9b3007a40f228f0e55f"
+  },
+  "local_settings.py": {
+    "live_sha256": "16f7e444dc434647eca5f2ee7094e1ca4892bfeb07a944931cbb07e3095dbaea",
+    "export_sha256": "16f7e444dc434647eca5f2ee7094e1ca4892bfeb07a944931cbb07e3095dbaea",
+    "git_blob_sha": "5c0fc23722a0f5a810b01cf3ca742522b818e752"
+  },
+  "budget_guard.py": {
+    "live_sha256": "5535fd76e905d175136c50706bca3e85e190d5db6e474a8dbc402e4475ed4ad8",
+    "export_sha256": "5535fd76e905d175136c50706bca3e85e190d5db6e474a8dbc402e4475ed4ad8",
+    "git_blob_sha": "4fde89e539094ef7d0ed4c32eef1a80f5b6b3882"
+  },
+  "workflow_voice.py": {
+    "live_sha256": "109a4a43acc30432c28c6a504c4b7a2a9e0b6812b6bea1e2c0e5697fbb03c6fd",
+    "export_sha256": "109a4a43acc30432c28c6a504c4b7a2a9e0b6812b6bea1e2c0e5697fbb03c6fd",
+    "git_blob_sha": "be831c1df1c60d3ea30d549759dc50e7e65526ac"
+  },
+  "vision_ui.py": {
+    "live_sha256": "ca6dbf1b0c301a58096e182f321819ae616361a1e6aea260047a5d8433c686dd",
+    "export_sha256": "ca6dbf1b0c301a58096e182f321819ae616361a1e6aea260047a5d8433c686dd",
+    "git_blob_sha": "997140a3df51cb25208afca673768855b0095dd6"
+  }
+}
