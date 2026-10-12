@@ -3,12 +3,13 @@ import json, math, os, queue, re, sqlite3, subprocess, sys, threading, time, uui
 from pathlib import Path
 from datetime import datetime,timezone,timedelta
 from urllib.request import Request,urlopen
+from voice_pipeline_hardening import normalize_stt, voice_cache_key
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 ROOT=Path(__file__).resolve().parent
 CONFIG=ROOT/'config/desktop.json'
 def greeting(hour):
- return 'Assalamu alaikum. '+('Good morning' if 5<=hour<12 else 'Good afternoon' if 12<=hour<17 else 'Good evening' if 17<=hour<21 else 'Good night')+', boss.'
+ return 'Assalamu alaikum. Ji boss, bataiye, main aapki kya madad kar sakti hoon?'
 def greeting_key(hour):
  return 'morning' if 5<=hour<12 else 'afternoon' if 12<=hour<17 else 'evening' if 17<=hour<21 else 'night'
 def load_config():return json.loads(CONFIG.read_text(encoding='utf-8'))
@@ -25,19 +26,8 @@ class Desktop:
   if ctypes.windll.kernel32.GetLastError()==183:raise SystemExit('Zoya desktop already active')
   self.health={'started':time.time(),'microphone_open':False,'voice_source':'saved selection','daily_cap':None};self.last_health=0
   self.events=queue.Queue();self.audio=queue.Queue(maxsize=100);self.busy=threading.Event();self.closed=threading.Event();self.pending=None;self.muted=False
-  self.root=tk.Tk();self.root.title('ZOYA · Desktop Command Centre');self.root.geometry('1100x730');self.root.configure(bg='#070d1c')
-  self.root.protocol('WM_DELETE_WINDOW',self.close)
-  self.root.report_callback_exception=lambda kind,value,tb:self.post('status','Desktop callback: '+str(value))
-  tk.Label(self.root,text='Z O Y A   /   DESKTOP COMMAND CENTRE',font=('Segoe UI',21,'bold'),fg='#74f5da',bg='#070d1c').pack(pady=16)
-  body=tk.Frame(self.root,bg='#070d1c');body.pack(fill='both',expand=True,padx=12)
-  self.canvas=tk.Canvas(body,width=330,height=420,bg='#070d1c',highlightthickness=0);self.canvas.pack(side='left')
-  self.status=tk.StringVar(value='Starting local voice controller…');tk.Label(self.root,textvariable=self.status,fg='#a2b8d4',bg='#070d1c',font=('Segoe UI',11)).pack()
-  self.feed=ScrolledText(body,bg='#101c30',fg='#eef6ff',insertbackground='white',font=('Segoe UI',12),wrap='word',height=17);self.feed.pack(side='right',fill='both',expand=True,padx=12,pady=10)
-  row=tk.Frame(self.root,bg='#070d1c');row.pack(fill='x',padx=22,pady=8)
-  self.entry=tk.Entry(row,bg='#172945',fg='white',insertbackground='white',font=('Segoe UI',12));self.entry.pack(side='left',fill='x',expand=True);self.entry.bind('<Return>',lambda e:self.submit(self.entry.get()))
-  tk.Button(row,text='Pause / Resume mic',command=self.toggle).pack(side='left',padx=8)
-  tk.Button(row,text='Preview offline Hindi voice',command=self.preview).pack(side='left',padx=8)
-  tk.Button(row,text='Use previewed offline voice',command=self.choose).pack(side='left')
+  from vision_ui import setup
+  setup(self)
   self.locked=False;self.last_tick=time.time();self.root.after(5000,self.resume_check)
   self.root.after(500,self.register_unlock)
   self.phase=0;self.root.after(50,self.animate);self.root.after(100,self.pump)
@@ -47,14 +37,8 @@ class Desktop:
   if kind=='status':self.health['status']=text
   self.events.put((kind,text))
  def animate(self):
-  self.phase+=.09;self.canvas.delete('all');x,y=max(320,self.canvas.winfo_width())/2,140
-  for n in range(5):
-   r=32+n*12+math.sin(self.phase+n)*4
-   self.canvas.create_oval(x-r,y-r,x+r,y+r,outline='#164c62' if n%2 else '#39d8b4',width=2)
-  self.canvas.create_text(x,y,text='Z',fill='#e5fff9',font=('Segoe UI',26,'bold'))
-  self.canvas.create_text(x,260,text='LOCAL FIRST\nNo daily conversation cap',fill='#819eba',font=('Segoe UI',13),justify='left')
-  self.canvas.create_text(x,330,text='VOICE → ZOYA → SKALES\nResults stay visible here',fill='#819eba',font=('Segoe UI',13),justify='left')
-  if not self.closed.is_set():self.root.after(50,self.animate)
+  from vision_ui import animate
+  animate(self)
  def register_unlock(self):
   import ctypes
   from ctypes import wintypes
@@ -137,6 +121,9 @@ class Desktop:
   if not model.exists():raise ValueError('Offline Hindi recognition model not installed')
   recognizer=KaldiRecognizer(Model(str(model)),16000);was_busy=False
   def callback(data,frames,timing,status):
+   from array import array
+   samples=array('h',bytes(data))
+   self.health['mic_level']=min(1,math.sqrt(sum(v*v for v in samples)/max(1,len(samples)))/6000)
    if not self.busy.is_set() and not self.muted and not self.locked:
     try:self.audio.put_nowait(bytes(data))
     except queue.Full:pass
@@ -153,18 +140,26 @@ class Desktop:
     if self.busy.is_set() or self.muted or self.locked:recognizer.Reset();was_busy=True;continue
     if was_busy:recognizer.Reset();was_busy=False
     if recognizer.AcceptWaveform(data):
-     text=json.loads(recognizer.Result()).get('text','').strip()
-     if text:self.submit(text)
+     text=normalize_stt(json.loads(recognizer.Result()).get('text',''))
+     if text:
+      from conversation_style import roman_display
+      spoken=roman_display(text).lower().strip(' .!?')
+      wake=bool(re.match(r'^(?:hey|he|hello|helo|hi|hai)\s+zoya\b|^zoya\b',spoken))
+      if wake:self.listening_until=time.monotonic()+45
+      if wake or time.monotonic()<getattr(self,'listening_until',0):self.submit(text)
+
  def submit(self,text):
   text=text.strip()
   if not text or self.busy.is_set():return
-  self.busy.set();self.post('Aap',text);self.post('status','Zoya samajh rahi hai…')
+  self.busy.set();self.entry.delete(0,'end');self.post('Aap',text);self.post('status','Zoya samajh rahi hai…')
   threading.Thread(target=self.reply,args=(text,),daemon=True).start()
  def reply(self,text):
   self.health.pop('last_voice_error',None)
   try:
    from quran_voice import handle
    if handle(self,text):return
+   from workflow_voice import route
+   if route(self,text):return
    low=text.lower()
    if self.pending:
     if low in ('haan','haa','ha','yes','हाँ','हां','जी हाँ','जी हां','हां यही करो','हाँ यही करो','ji haan'):
@@ -218,22 +213,29 @@ class Desktop:
     db.execute('INSERT INTO queue VALUES(?,?,?,?)',(task_id,value,'queued',time.time()));db.commit()
    self.post('Zoya','Ji boss, task queue mein save ho gaya. Result yahin aayega.');self.say('Ji boss, task save ho gaya. Aap agla command de sakte hain.')
  def task_worker(self):
-  from contextlib import closing
+  from queue_sync import initialize, claim, finish
   from skales_bridge import dispatch
+  from conversation_style import task_report
   path=ROOT/'data/desktop-queue.sqlite3'
-  with closing(sqlite3.connect(path)) as db:
-   db.execute('CREATE TABLE IF NOT EXISTS queue(id TEXT PRIMARY KEY,message TEXT,status TEXT,created REAL)')
-   db.execute("UPDATE queue SET status='needs_review' WHERE status='running'");db.commit()
+  initialize(path)
   while not self.closed.wait(1):
-   with closing(sqlite3.connect(path)) as db:
-    db.execute('BEGIN IMMEDIATE');row=db.execute("SELECT id,message FROM queue WHERE status='queued' ORDER BY created LIMIT 1").fetchone()
-    if not row:db.commit();continue
-    db.execute("UPDATE queue SET status='running' WHERE id=?",(row[0],));db.commit()
    try:
-    from conversation_style import task_report
-    result=dispatch(row[1]);self.post('Skales result',task_report(result));status=result['status']
-   except Exception as error:self.post('status','Skales task retained: '+type(error).__name__);status='needs_review'
-   with closing(sqlite3.connect(path)) as db:db.execute('UPDATE queue SET status=? WHERE id=?',(status,row[0]));db.commit()
+    row=claim(path)
+   except sqlite3.Error as error:
+    self.post('status','Queue claim delayed: '+type(error).__name__)
+    continue
+   if not row:continue
+   try:
+    result=dispatch(row[1])
+   except Exception as error:
+    result={'status':'needs_review','reason':type(error).__name__,'automatic_retry':False,'text':'Task needs review; it was not automatically repeated.'}
+   try:
+    finish(path,row[0],result)
+   except sqlite3.Error as error:
+    # Stop this worker if outcome cannot be persisted. Restart marks running as needs_review.
+    self.post('status','Task outcome pending reconciliation: '+type(error).__name__)
+    return
+   self.post('Skales result',task_report(result))
  def say(self,text):
   try:
    if load_config().get('offline_voice_approved'):self.local_say(text);return
@@ -242,7 +244,7 @@ class Desktop:
    from natural_voice import ElevenLabsVoice,VoiceConfig
    local_settings.load(ROOT);budget_guard.load_policy(ROOT)
    voice=ElevenLabsVoice(ROOT/'workspaces/Zoya',VoiceConfig.from_env('zoya'))
-   key=hashlib.sha256((voice.config.voice_id+text).encode()).hexdigest()[:32]
+   key=voice_cache_key(voice.config.voice_id,text)
    cache=ROOT/'data/voice-control-cache';cache.mkdir(exist_ok=True);path=cache/(key+'.mp3')
    if not path.exists():
     plan=voice.plan(text,'control-'+key+'.mp3');result=voice.generate(text,'control-'+key+'.mp3',plan['hash'],conversation_scope=True);path.write_bytes(Path(result['path']).read_bytes())
