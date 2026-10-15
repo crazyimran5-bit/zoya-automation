@@ -159,6 +159,30 @@ class Studio:
             current['state']['captions']={'path':str(p.relative_to(self.base)),'sha256':sha(p),'segments':segments}
             current['state']['stages']['captions']='complete';current['status']='ready_to_render';self.save(c,current)
         return self.get(jid)
+    def auto_captions(self,jid):
+        j=self.get(jid)
+        if j['status']!='awaiting_captions': raise ValueError('Reviewed performance must complete first')
+        model_path=self.root/'data/offline/faster-whisper-base'
+        if not (model_path/'model.bin').is_file(): raise ValueError('Local Whisper base model unavailable')
+        from whisper_backend import WhisperModel
+        model=WhisperModel(str(model_path),device='cpu',compute_type='int8',cpu_threads=2)
+        import re
+        norm=lambda text:re.sub(r'[^\w]+','',text.lower())
+        out=[];offset=0
+        for i,scene in enumerate(j['script']['scenes']):
+            item=j['state']['scenes'][str(i)]['receipt'];p=scoped_path(self.base,item['path'])
+            if sha(p)!=item['sha256']: raise ValueError('Approved performance changed')
+            segments,_=model.transcribe(str(p),beam_size=1,word_timestamps=True,condition_on_previous_text=False)
+            words=[w for seg in segments for w in (seg.words or []) if norm(w.word)]
+            authored=' '.join(line['text'] for line in scene['dialogue']).split()
+            if len(words)!=len(authored) or any(norm(w.word)!=norm(a) for w,a in zip(words,authored)):
+                raise ValueError('Speech transcript differs from approved dialogue; review audio/script before captions')
+            for n in range(0,len(words),5):
+                group=words[n:n+5];a=max(offset,offset+float(group[0].start));b=min(offset+scene['duration'],offset+float(group[-1].end))
+                out.append({'start':a,'end':b,'text':' '.join(authored[n:n+5])})
+            offset+=scene['duration']
+        return self.captions(jid,out)
+
     def render(self,jid):
         with self.db() as c:
             c.execute('BEGIN IMMEDIATE');j=self._get(c,jid)
