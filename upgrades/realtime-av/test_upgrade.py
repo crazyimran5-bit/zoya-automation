@@ -108,6 +108,24 @@ class VadTests(unittest.TestCase):
     def test_invalid_latency_config(self):
         with self.assertRaises(ValueError):ListenerConfig('m','v',silence_ms=1000).validate()
 
+    def test_mute_invalidates_pending_speech(self):
+        listener=VoiceListener(self.cfg,lambda *args:None,lambda:None)
+        listener.raw.put(('fixture',16000,0));listener.utterances.put(('fixture',0,0,'id'))
+        listener.set_enabled(False)
+        self.assertFalse(listener.enabled.is_set())
+        self.assertTrue(listener.raw.empty());self.assertTrue(listener.utterances.empty())
+        self.assertEqual(listener._epoch,1)
+        listener.set_enabled(True);self.assertEqual(listener._epoch,2)
+
+    def test_live_adapter_invalidates_late_turn(self):
+        import sys
+        from realtime_desktop import initialize,begin_turn,valid_turn
+        d=N(root=N(after=lambda *a:None),closed=threading.Event(),health={})
+        with patch.dict(sys.modules,{'onnxruntime':N(disable_telemetry_events=lambda:None)}):
+            initialize(d)
+        begin_turn(d);self.assertTrue(valid_turn(d));d.realtime_player.stop()
+        self.assertFalse(valid_turn(d))
+
     def test_late_tts_after_barge_in_is_rejected(self):
         p=InterruptiblePlayer();token=p.begin_response();p.stop()
         self.assertFalse(p.play('nonexistent-late-audio.mp3',expected_epoch=token))
