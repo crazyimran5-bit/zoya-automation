@@ -1,0 +1,37 @@
+<!doctype html><meta charset="utf-8"><title>Zoya Production 4K</title>
+<style>body{font:17px system-ui;background:#102229;color:#eef6f5;max-width:1000px;margin:35px auto;padding:20px}textarea,input{box-sizing:border-box;width:100%;padding:12px;background:#19353e;color:white;border:1px solid #55828c;border-radius:6px}textarea{height:220px}button{padding:12px;margin:8px 8px 8px 0;background:#8ee0ce;border:0;border-radius:6px;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#19353e;padding:15px}small{color:#bcdbdf}a{color:#8ee0ce}</style>
+<h1>Zoya · Production 4K</h1>
+<p>Script → character action and dialogue → captions → 4K export → quality checks → your review</p>
+<p id="note">Higgsfield generation currently needs the connected ChatGPT tool. This laptop saves handoffs and returned job IDs; it cannot submit unattended Higgsfield jobs yet.</p>
+<h2>1. Story and characters</h2><small>Each scene includes its action, dialogue and duration. Keep a fixed character appearance and voice description.</small>
+<textarea id="script"></textarea><button onclick="create()">Save production job</button>
+<h2>2. Resume a job</h2><input id="jid" placeholder="Saved job ID"><button onclick="status()">Check saved progress</button>
+<h2>3. Character performance</h2><input id="scene" type="number" min="0" value="0"><button onclick="handoff()">Prepare this scene for Higgsfield</button>
+<p><small>Scene numbers start at 0. Give the returned handoff to Ali. Generation is complete only after a returned clip and its motion/voice review are recorded.</small></p>
+<h3>Record returned generation</h3><input id="providerid" placeholder="Returned Higgsfield job ID">
+<button onclick="recordJob()">Save returned job ID</button>
+<small>Completed clip receipt: assigned workspace-relative path, SHA256, provider_job_id, method and explicit performance review. Ali can prepare this from the downloaded clip; never mark unseen content reviewed.</small>
+<textarea id="receipt" placeholder='{"path":"job-folder/scene.mp4","sha256":"...","provider_job_id":"...","method":"generated_dialogue","review":{"identity":true,"action":true,"lip_sync":true,"matching_voice":true,"natural_pacing":true}}'></textarea>
+<button onclick="acceptScene()">Record reviewed performance</button>
+<h2>4. Captions and export</h2><button onclick="call(\'auto-captions\',{})">Generate captions from actual speech</button><p><small>Local transcription must match the saved dialogue. A mismatch stops for review.</small></p><textarea id="segments" placeholder='[{"start":0,"end":2,"text":"Words actually spoken"}]'></textarea>
+<button onclick="call('captions',{segments:JSON.parse(document.getElementById('segments').value)})">Save matching timed captions</button>
+<button onclick="call('render',{})">Render / resume local 4K export</button>
+<p><small>Export preserves each scene's dialogue audio. A render can take several minutes. Refresh status rather than submitting another job.</small></p>
+<h2>5. Final review</h2><p>Watch the exported file first. Confirm every item only after reviewing it.</p>
+<div id="checks"></div><button onclick="approveFinal()">Mark reviewed video ready</button>
+<h2>Production status</h2><pre id="out">No job selected.</pre>
+<script>
+const token=TOKEN;
+let currentJob=null;
+for(const k of ['motion','lip_sync','voice','subtitle_sync','visual_continuity'])document.getElementById('checks').insertAdjacentHTML('beforeend','<label style="display:block"><input style="width:auto" type="checkbox" id="check-'+k+'"> '+k.replaceAll('_',' ')+'</label>');
+document.getElementById('script').value=JSON.stringify({title:"Playing together",characters:[{name:"Armaan",voice_description:"Gentle young boy voice, consistent across all scenes",appearance:"Original animated boy wearing a blue shirt"},{name:"Ismat",voice_description:"Gentle young girl voice, consistent across all scenes",appearance:"Original animated girl wearing a yellow dress"}],scenes:[{duration:10,action:"Armaan slowly rolls a red ball to Ismat. Ismat catches it, smiles and waves. Both visibly speak their own lines.",dialogue:[{speaker:"Armaan",text:"Ismat, shall we play together?"},{speaker:"Ismat",text:"Yes! Roll the ball to me!"}]}]},null,2);
+async function api(action,p){let r=await fetch('/api/studio/'+action,{method:'POST',headers:{'Content-Type':'application/json','X-Zoya-Token':token},body:JSON.stringify(p)});let j=await r.json();if(j.id&&j.state)currentJob=j;document.getElementById('out').textContent=JSON.stringify(j,null,2);if(!r.ok)throw Error(j.error||'Stage stopped');return j}
+async function create(){try{let s=JSON.parse(document.getElementById('script').value);let request_id='studio-'+crypto.randomUUID();let j=await api('create',{script:s,request_id});document.getElementById('jid').value=j.id;localStorage.zoyaProductionJob=j.id}catch(e){document.getElementById('out').textContent=e.message}}
+async function call(a,p){try{return await api(a,{id:document.getElementById('jid').value,...p})}catch(e){document.getElementById('out').textContent=e.message}}
+async function recordJob(){let h=await handoff();if(h)await call('submission',{scene:Number(document.getElementById('scene').value),provider_job_id:document.getElementById('providerid').value,request_key:h.request_key})}
+function acceptScene(){try{return call('accept-scene',{scene:Number(document.getElementById('scene').value),receipt:JSON.parse(document.getElementById('receipt').value)})}catch(e){document.getElementById('out').textContent=e.message}}
+async function approveFinal(){let j=await status();if(!j||!j.state.final)return;let checks={};for(const k of ['motion','lip_sync','voice','subtitle_sync','visual_continuity'])checks[k]=document.getElementById('check-'+k).checked;return call('review',{sha256:j.state.final.sha256,checks})}
+function status(){return call('status',{})}
+function handoff(){return call('handoff',{scene:Number(document.getElementById('scene').value)})}
+document.getElementById('jid').value=localStorage.zoyaProductionJob||'';
+</script>
