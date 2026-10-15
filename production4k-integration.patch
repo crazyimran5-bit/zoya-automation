@@ -1,0 +1,105 @@
+--- a/app.py
++++ b/app.py
+@@ -159,6 +159,8 @@
+     engine=SafeEngine(data/'zoya.sqlite3',root=ROOT)
+     from production import ProductionCoordinator, readiness as production_readiness
+     production=ProductionCoordinator(engine)
++    from production_studio import Studio
++    studio=Studio(ROOT)
+     from voice_session import VoiceSession
+     voice_session=VoiceSession(engine)
+     from conversation import Conversation
+@@ -196,6 +198,9 @@
+             if path=='/':
+                 html=(ROOT/'web/index.html').read_text(encoding='utf-8').replace('__TOKEN__',token)
+                 return self.send(200,html,'text/html')
++            if path=='/studio':
++                page=(ROOT/'production-studio.html').read_text(encoding='utf-8').replace('TOKEN',json.dumps(token))
++                return self.send(200,page,'text/html; charset=utf-8')
+             if self.headers.get('X-Zoya-Token')!=token:
+                 return self.send(403,{'error':'Invalid session'})
+             if path=='/api/voice/audio':
+@@ -228,6 +233,22 @@
+                     result=voice_session.plan()
+                 elif path=='/api/voice/approve':
+                     result=voice_session.approve(p.get('id'),p.get('hash'))
++                elif path=='/api/studio/create':
++                    result=studio.create(p.get('script'),p.get('request_id'))
++                elif path=='/api/studio/status':
++                    result=studio.get(p.get('id'))
++                elif path=='/api/studio/handoff':
++                    result=studio.handoff(p.get('id'),p.get('scene'))
++                elif path=='/api/studio/submission':
++                    result=studio.record_submission(p.get('id'),p.get('scene'),p.get('provider_job_id'),p.get('request_key'))
++                elif path=='/api/studio/accept-scene':
++                    result=studio.accept_scene(p.get('id'),p.get('scene'),p.get('receipt'))
++                elif path=='/api/studio/captions':
++                    result=studio.captions(p.get('id'),p.get('segments'))
++                elif path=='/api/studio/render':
++                    result=studio.render(p.get('id'))
++                elif path=='/api/studio/review':
++                    result=studio.review(p.get('id'),p.get('sha256'),p.get('checks'))
+                 elif path=='/api/production/create':
+                     result=production.create(p.get('channel'),p.get('brief'),p.get('request_id'))
+                 elif path=='/api/production/cancel':
+--- a/production.py
++++ b/production.py
+@@ -110,6 +110,7 @@
+     def plan_media(self, job_id, clips, subtitles=None):
+         with self.lock:
+             job=self._job(job_id)
++            if job['channel']=='YT-3': raise ValueError('Talking-character production requires /api/studio/create and reviewed synchronized performance. Stock overdub route disabled for kids.')
+             if job['status'] in ('running','queued','media_ready'): raise ValueError('Media job already queued or completed')
+             steps=json.loads(job['steps'])
+             with self.engine.db() as c:
+@@ -181,6 +182,7 @@
+             plan=json.loads(job['media_plan'])
+             if fingerprint(plan)!=job['media_hash'] or time.time()>plan['expires']: raise ValueError('Expired or modified media approval')
+             if plan['target']!=self.engine.profiles[job['channel']]: raise ValueError('Target changed')
++            if job['channel']=='YT-3': raise ValueError('Legacy kids media route disabled; use production studio')
+             root=self.root/'workspaces'/job['channel']
+             for item in plan['clips']+([plan['subtitles']] if plan['subtitles'] else []):
+                 if file_hash(scoped(root,item['path']))!=item['sha256']: raise ValueError('Approved visual or subtitle changed')
+@@ -201,11 +203,11 @@
+                 with self.engine.db() as c:
+                     c.execute('INSERT INTO production_artifacts VALUES(?,?,?,?)',(job['id'],plan['voice_plan']['hash'],audio['relative_path'],file_hash(audio_path)))
+             if self._job(job['id'])['status']=='cancelled': return True
+-            from video_render import render_video
++            from video_render import render_video, RenderConfig
+             with self.engine.db() as c:c.execute("UPDATE production_jobs SET output='Video editing and rendering running' WHERE id=?",(job['id'],))
+             self.engine.event(job['id'],'render_running','Local editing/rendering and technical QA started')
+             result=render_video(root,[item['path'] for item in plan['clips']],audio['relative_path'],plan['output'],
+-                approved=True,subtitles=plan['subtitles']['path'] if plan['subtitles'] else None)
++                approved=True,subtitles=plan['subtitles']['path'] if plan['subtitles'] else None,config=RenderConfig(width=3840,height=2160,fps=30))
+             if not result['qa']['passed']: raise ValueError('Video failed technical QA')
+             status='media_ready'; output=json.dumps(result)
+         except Exception as error:
+--- a/workflow_voice.py
++++ b/workflow_voice.py
+@@ -28,7 +28,7 @@
+                     proposal=json.loads(local_api('/api/demo/plan',{'task_id':job_id}))
+                     d.workflow_pending=('demo_render',proposal['id'],proposal['hash'])
+                     d.post('Script Agent',proposal['plan']['script']['narration'])
+-                    d.post('Zoya','Script ready. Target local preview; one Sarah voice request within budget, three text scenes, 4K render and subtitles. Approve voice and render? Haan boliye.')
++                    d.post('Zoya','Legacy preview disabled. Open the 4K Production Studio for reviewed motion, matching voice and subtitles.')
+                 else:
+                     result=json.loads(local_api('/api/demo/approve',{'id':job_id,'hash':key}))
+                     d.post('Zoya','Voice/render job queued. Job ID: '+result['id']+'. Actual result is saved in demo-jobs; no upload.')
+@@ -48,14 +48,9 @@
+         else:d.say(answer)
+         return True
+     if any(w in low for w in ('video demo','demo video','video banao','video render','script se video')):
+-        from zoya_desktop import http as local_api
+-        import sqlite3
+-        command='/yt-script '+text+' Return only valid JSON with title, narration (45-60 original English words), scenes (exactly three short strings). No markdown, stats or claims of rendered media. This is a short Mindset Forge local text-scene demo.'
+-        task=json.loads(local_api('/api/task',{'command':command,'channel':'YT-1','request_id':'voice-demo-'+str(uuid.uuid4())}))
+-        with sqlite3.connect(Path(__file__).parent/'data/zoya.sqlite3') as db:
+-            key=db.execute('SELECT hash FROM plans WHERE task_id=?',(task['id'],)).fetchone()[0]
+-        d.workflow_pending=('demo_script',task['id'],key)
+-        d.post('Zoya','Target Mindset Forge local preview. Script specialist will draft your requested topic, then show the exact narration before paid voice/render. Approve script? Haan boliye.')
++        import webbrowser
++        webbrowser.open('http://127.0.0.1:8767/studio')
++        d.post('Zoya','4K Production Studio khol diya. Pehle script aur character action save karein. Higgsfield performance handoff aur matching voice review ke bina video complete nahi hoga. Unattended provider connection abhi pending hai.')
+         return True
+     if any(w in low for w in ('promo','voiceover','voice over','pet care','pet-care','पेट केयर')):
+         import local_settings,budget_guard
