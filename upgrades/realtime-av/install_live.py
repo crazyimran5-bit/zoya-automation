@@ -86,6 +86,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--root',required=True,type=Path)
     p.add_argument('--apply',action='store_true')
+    p.add_argument('--reuse-existing-ml',action='store_true',help='Preserve working local ML versions; install only missing audio I/O dependencies')
     args=p.parse_args();root=args.root.resolve();source=Path(__file__).resolve().parent
     if sys.platform!='win32':raise SystemExit('Run on the authorized Windows laptop')
     if not (root/'zoya_desktop.py').is_file() or not (root/'app.py').is_file():
@@ -124,8 +125,17 @@ def main():
     python=env/'Scripts/python.exe'
     req=root/'requirements-realtime.txt' if source==root else source/'requirements.txt'
     if not req.is_file():raise ValueError('Reviewed realtime requirements file missing')
+    vad_args=[]
+    if args.reuse_existing_ml:
+        req=root/'data/realtime-audio-only.txt'
+        req.write_text('PyAudio==0.2.14\nsoxr==1.0.0\n',encoding='utf-8')
+        assets=sorted((root/'vendor/faster-whisper-ffmpeg/faster_whisper/assets').glob('silero*.onnx'))
+        if not assets:raise ValueError('Existing vendor Silero asset missing; do not start a model download')
+        vad_args=['--vad-source',str(assets[0])]
+        report['ml_policy']='Reuse existing local ML packages; validate before activation'
+        record()
     with (root/'data/realtime-dependency-install.log').open('w',encoding='utf-8') as log:
-        subprocess.run([str(python),'-m','pip','install','--only-binary=:all:','-r',str(req)],
+        subprocess.run([str(python),'-m','pip','install','--only-binary=:all:','--timeout','15','--retries','1','-r',str(req)],
                        stdout=log,stderr=subprocess.STDOUT,cwd=root,check=True,timeout=600)
     # Copy reviewed modules before changing live entrypoints.
     for name in RUNTIME:
@@ -134,7 +144,7 @@ def main():
     report['stage']='local_models';record()
     with (root/'data/realtime-model-check.log').open('w',encoding='utf-8') as log:
         subprocess.run([str(python),str(root/'prepare_models.py'),'--vad-output',str(root/'models/silero_vad_v6.onnx'),
-                        '--whisper-source',str(root/'data/offline/faster-whisper-base')],
+                        '--whisper-source',str(root/'data/offline/faster-whisper-base'),*vad_args],
                        stdout=log,stderr=subprocess.STDOUT,cwd=root,check=True,timeout=120)
     report['stage']='tests';record()
     test_env=os.environ.copy();test_env['ZOYA_TEST_4K']='1'
