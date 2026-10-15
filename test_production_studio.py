@@ -46,6 +46,19 @@ class WorkflowTests(unittest.TestCase):
  def test_path_escape(self):
   self.submitted()
   with self.assertRaises(ValueError):self.s.accept_scene(self.jid,0,{'path':'../escape.mp4'})
+ def test_auto_captions_match_actual_words(self):
+  self.accepted();m=self.s.root/'data/offline/faster-whisper-base';m.mkdir(parents=True);(m/'model.bin').write_bytes(b'fixture')
+  from types import SimpleNamespace as N
+  fake=N(transcribe=lambda *a,**k:([N(words=[N(word='Hello',start=0,end=.3),N(word='friend!',start=.3,end=.9)])],None))
+  with patch.dict('sys.modules',{'whisper_backend':N(WhisperModel=lambda *a,**k:fake)}):
+   self.assertEqual(self.s.auto_captions(self.jid)['status'],'ready_to_render')
+ def test_auto_captions_mismatch_stops(self):
+  self.accepted();m=self.s.root/'data/offline/faster-whisper-base';m.mkdir(parents=True);(m/'model.bin').write_bytes(b'fixture')
+  from types import SimpleNamespace as N
+  fake=N(transcribe=lambda *a,**k:([N(words=[N(word='wrong',start=0,end=.9)])],None))
+  with patch.dict('sys.modules',{'whisper_backend':N(WhisperModel=lambda *a,**k:fake)}):
+   with self.assertRaises(ValueError):self.s.auto_captions(self.jid)
+  self.assertEqual(self.s.get(self.jid)['status'],'awaiting_captions')
  def test_no_generation_from_handoff(self):
   h=self.s.handoff(self.jid,0);self.assertFalse(h['submitted']);self.assertEqual(self.s.get(self.jid)['status'],'awaiting_performance')
 if __name__=='__main__':unittest.main()
