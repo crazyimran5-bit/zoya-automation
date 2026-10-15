@@ -13,7 +13,7 @@
 <small>Completed clip receipt: assigned workspace-relative path, SHA256, provider_job_id, method and explicit performance review. Ali can prepare this from the downloaded clip; never mark unseen content reviewed.</small>
 <textarea id="receipt" placeholder='{"path":"job-folder/scene.mp4","sha256":"...","provider_job_id":"...","method":"generated_dialogue","review":{"identity":true,"action":true,"lip_sync":true,"matching_voice":true,"natural_pacing":true}}'></textarea>
 <button onclick="acceptScene()">Record reviewed performance</button>
-<h2>4. Captions and export</h2><textarea id="segments" placeholder='[{"start":0,"end":2,"text":"Words actually spoken"}]'></textarea>
+<h2>4. Captions and export</h2><button onclick="call(\'auto-captions\',{})">Generate captions from actual speech</button><p><small>Local transcription must match the saved dialogue. A mismatch stops for review.</small></p><textarea id="segments" placeholder='[{"start":0,"end":2,"text":"Words actually spoken"}]'></textarea>
 <button onclick="call('captions',{segments:JSON.parse(document.getElementById('segments').value)})">Save matching timed captions</button>
 <button onclick="call('render',{})">Render / resume local 4K export</button>
 <p><small>Export preserves each scene's dialogue audio. A render can take several minutes. Refresh status rather than submitting another job.</small></p>
