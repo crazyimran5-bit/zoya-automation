@@ -1,0 +1,78 @@
+{
+  "date_utc": "2026-10-15T20:36:49.929989+00:00",
+  "test_runtime": "3.12.14 Linux",
+  "unit_tests_passed": 23,
+  "opt_in_encode_tests": [
+    {
+      "resolution": "3840x2160",
+      "fps": 30,
+      "codec": "H.264",
+      "passed": true
+    },
+    {
+      "resolution": "3840x2160",
+      "fps": 60,
+      "codec": "H.265",
+      "passed": true
+    }
+  ],
+  "scene_timing_check": "Actual red/blue frame samples at 0.3s and 0.8s",
+  "silero_v6_real_inference": "passed",
+  "silero_sha256": "4cbf549b8326f60f80f2536d9eefeb450a9abe83365a098031c89719f1be17d2",
+  "windows_cp313_wheels": "Pinned runtime wheels and dependency resolution successfully downloaded",
+  "windows_laptop_deployment": "Installed and restarted in the scoped realtime environment. Authenticated render route responsive; microphone open at 16kHz. Existing approval and voice-quota code preserved.",
+  "physical_microphone_and_barge_in": "Human-spoken acceptance still pending",
+  "optional_whisper_download": "Stopped/blocked by automatic approval review due to unexpected Microsoft telemetry connection; not retried. ONNX telemetry is disabled in delivered code.",
+  "sha256": {
+    "video_engine.py": "432834136a391a513d60529059b8329a68153152d8ddad6ea66ec0f142831367",
+    "voice_listener.py": "71879deadbd9ed0ccd95a77f910ea53fdc58fef5c211f8eb6b9c60d89e96de20",
+    "service_integration.py": "a51b25f98fd59dec51721342da66add5c2be8b2982feb7d9ad2705151b1b1130",
+    "realtime_desktop.py": "85b9226c39ba356a6f56d8cfd907126013ee8bcda3cb6cb6e33e3b7a5e1e00b1",
+    "install_live.py": "41f23b0b10d087f0b7ff48d5ab0eca9be655c627befeb3c0c70ab74e51cab4e7",
+    "prepare_models.py": "fca257f075f8ab26b7c4161a0c7f7abd42833951b027bc2a542cccabf498d17a",
+    "test_upgrade.py": "0fa563f54d86cee7796ecd7d8bcb3be5a18d0f36212b2639904e31b03c84070c",
+    "requirements.txt": "2911533034f4ddb5661dc4ee7df4387531d9a9507aecee706f46d05b1c987de4",
+    "README.md": "1c822b2ea1569dbf4e29e5d410e2fe69be2167240c4637556e6c1d37945e5717",
+    "example_manifest.json": "c075a912555bd05b1be2cd5de960702f5b24c6d62ce551388097d6c90b34f644",
+    "ready-script.md": "b91d2edd0bf4bccba79e3d2ce2b447a7be07b4f933bea258bc4bde12c0d8dcfe",
+    "ready-script.json": "6de2ba0ac2393bbe8d9d3444337dd6ffad1bdbefea59c065d6f4e613c85234bd"
+  },
+  "installer": "Executed successfully on Windows; source guards, checkpoint, tests, restart and health verification passed",
+  "ready_script": {
+    "title": "The Red Ball Team",
+    "planned_seconds": 30,
+    "scenes": 6,
+    "characters": [
+      "Armaan",
+      "Ismat"
+    ],
+    "generated_video": false
+  },
+  "windows_tests_passed": 24,
+  "live_windows_packages": {
+    "numpy": "2.5.4",
+    "onnxruntime": "1.31.0",
+    "ctranslate2": "4.8.2",
+    "faster-whisper": "1.2.1",
+    "PyAudio": "0.2.14",
+    "soxr": "1.0.0"
+  },
+  "live_ml_policy": "Existing working ML packages preserved; installed only missing audio I/O dependencies in isolated environment.",
+  "microphone": {
+    "open": true,
+    "sample_rate": 16000,
+    "audio_drops": 0,
+    "stt_errors": 0,
+    "dispatch_errors": 0
+  },
+  "playback_mechanism": {
+    "stream_opened": true,
+    "stop_ms": 143.22,
+    "late_tts_rejected": true
+  },
+  "saved_narration_alignment": {
+    "passed": true,
+    "units": 27,
+    "new_voice_generated": false
+  }
+}

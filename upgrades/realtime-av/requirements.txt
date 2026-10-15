@@ -1,0 +1,13 @@
+# Windows 11 x64, regular CPython 3.13 (not the free-threaded build).
+# Explicit runtime versions; pip resolves their transitive dependencies.
+PyAudio==0.2.14
+numpy==2.2.6
+onnxruntime==1.23.2
+faster-whisper==1.2.1
+ctranslate2==4.6.0
+av==16.0.1
+soxr==1.0.0
+huggingface-hub==0.34.4
+tokenizers==0.21.4
+# Silero is loaded directly from its official ONNX graph; no torch/torchaudio.
+# FFmpeg/ffprobe are external executables, not Python packages.

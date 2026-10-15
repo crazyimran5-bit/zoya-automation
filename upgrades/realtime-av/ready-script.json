@@ -1,0 +1,101 @@
+{
+  "title": "The Red Ball Team",
+  "characters": [
+    {
+      "name": "Armaan",
+      "voice_description": "Original gentle preschool boy voice, playful and warm; fixed voice identity across all scenes. No adult narration or pitch-only impersonation.",
+      "appearance": "Original 3D cartoon preschool boy, blue T-shirt, navy shorts, soft brown hair."
+    },
+    {
+      "name": "Ismat",
+      "voice_description": "Original gentle preschool girl voice, cheerful and soft, distinct from Armaan; fixed voice identity across all scenes.",
+      "appearance": "Original 3D cartoon preschool girl, yellow dress, white shoes, short dark hair."
+    }
+  ],
+  "scenes": [
+    {
+      "duration": 5,
+      "action": "Armaan kneels on the mint rug and lifts a red ball. Ismat sits opposite, smiles and opens her hands. Bright soft playroom daylight, eye-level framing, normal gentle speed; only the current speaker moves their lips. No narration or text cards.",
+      "dialogue": [
+        {
+          "speaker": "Armaan",
+          "text": "Ismat, want to play?"
+        },
+        {
+          "speaker": "Ismat",
+          "text": "Yes! Roll it slowly."
+        }
+      ]
+    },
+    {
+      "duration": 5,
+      "action": "Armaan slowly rolls the ball to Ismat, who catches it with both hands. Pause on her smile. Bright soft playroom daylight, eye-level framing, normal gentle speed; only the current speaker moves their lips. No narration or text cards.",
+      "dialogue": [
+        {
+          "speaker": "Armaan",
+          "text": "Here comes the ball!"
+        },
+        {
+          "speaker": "Ismat",
+          "text": "I caught it!"
+        }
+      ]
+    },
+    {
+      "duration": 5,
+      "action": "The ball gently slips away beside a large foam block. Both look at it, then at one another, playfully. Bright soft playroom daylight, eye-level framing, normal gentle speed; only the current speaker moves their lips. No narration or text cards.",
+      "dialogue": [
+        {
+          "speaker": "Ismat",
+          "text": "Oops! It rolled away!"
+        },
+        {
+          "speaker": "Armaan",
+          "text": "Let’s get it together!"
+        }
+      ]
+    },
+    {
+      "duration": 5,
+      "action": "They walk to the ball, crouch, and push it back onto the rug together. Show hand contact and continuous ball physics. Bright soft playroom daylight, eye-level framing, normal gentle speed; only the current speaker moves their lips. No narration or text cards.",
+      "dialogue": [
+        {
+          "speaker": "Armaan",
+          "text": "One, two, three… push!"
+        },
+        {
+          "speaker": "Ismat",
+          "text": "We did it!"
+        }
+      ]
+    },
+    {
+      "duration": 5,
+      "action": "Ismat rolls the ball back slowly. Armaan receives it, nods and smiles at her. Bright soft playroom daylight, eye-level framing, normal gentle speed; only the current speaker moves their lips. No narration or text cards.",
+      "dialogue": [
+        {
+          "speaker": "Ismat",
+          "text": "Your turn, Armaan."
+        },
+        {
+          "speaker": "Armaan",
+          "text": "Thank you, Ismat!"
+        }
+      ]
+    },
+    {
+      "duration": 5,
+      "action": "They sit, roll the ball once more and share a short natural giggle. End on their smiles and the ball between them. Bright soft playroom daylight, eye-level framing, normal gentle speed; only the current speaker moves their lips. No narration or text cards.",
+      "dialogue": [
+        {
+          "speaker": "Armaan",
+          "text": "Playing together is fun!"
+        },
+        {
+          "speaker": "Ismat",
+          "text": "Again?"
+        }
+      ]
+    }
+  ]
+}

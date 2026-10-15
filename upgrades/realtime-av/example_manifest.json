@@ -1,0 +1,20 @@
+{
+  "script_text": "Small steps build focus. Start today.",
+  "audio_path": "voice/narration.wav",
+  "timestamps": [
+    {"start": 0.1, "end": 0.4, "text": "Small"},
+    {"start": 0.4, "end": 0.8, "text": "steps"},
+    {"start": 0.8, "end": 1.1, "text": "build"},
+    {"start": 1.1, "end": 1.6, "text": "focus."},
+    {"start": 1.9, "end": 2.2, "text": "Start"},
+    {"start": 2.2, "end": 2.8, "text": "today."}
+  ],
+  "media_assets": [
+    {"path": "assets/focus-4k.mp4", "text": "Small steps build focus."},
+    {"path": "assets/action-4k.jpg", "text": "Start today."}
+  ],
+  "fps": 30,
+  "codec": "h264",
+  "require_native_4k": true,
+  "burn_subtitles": true
+}
