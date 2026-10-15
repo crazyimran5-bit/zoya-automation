@@ -7,7 +7,7 @@ Implemented locally on Windows and provided here for review. This repository is 
 2. Create a scene handoff for Higgsfield. Recheck current model constraints, workspace, cost and rights before generation.
 3. Record each returned provider job ID against the exact handoff request key. Never resubmit an uncertain request; poll that job ID externally.
 4. Download actual completed performance into the assigned Production4K workspace. Record file SHA256, provider job ID, performance method and explicit identity/action/lip-sync/voice/pacing review.
-5. Supply measured speech timestamps matching reviewed dialogue. The workflow validates ordering, bounds and caption text. Timestamp accuracy still requires listening review.
+5. Generate local Whisper word timestamps from actual scene audio. Any word mismatch stops for review; manually corrected measured timestamps can also be supplied. The workflow validates ordering, bounds and caption text. Timestamp accuracy still requires listening review.
 6. Local FFmpeg assembly preserves synchronized scene audio, exports 3840x2160/30fps H.264/AAC with subtitles.
 7. Technical QA checks dimensions, frame rate, duration, audible audio, decode, black and frozen intervals. Character performance is a human review, not an automated semantic guarantee.
 8. Final motion, lip-sync, voice, subtitle synchronization and visual continuity review is bound to final file SHA. Only then status becomes ready. Publication stays disabled.
@@ -16,7 +16,7 @@ Implemented locally on Windows and provided here for review. This repository is 
 SQLite saves each stage and provider ID. Repeated request IDs reject changed scripts. A scene cannot be assigned a second provider job. Restarted local renders become render_interrupted; resume checks input hashes and reuses an existing final only after QA. No external paid generation is replayed.
 
 ## Routes
-Authenticated localhost POST /api/studio/{create,status,handoff,submission,accept-scene,captions,render,review}.
+Authenticated localhost POST /api/studio/{create,status,handoff,submission,accept-scene,auto-captions,captions,render,review}.
 Production console: /studio.
 All media paths are relative to workspaces/Production4K and resolved against that boundary.
 
@@ -26,4 +26,4 @@ Source resolution is recorded separately: exporting at 4K can upscale a lower-re
 
 ## Validation
 python -m unittest test_production_studio -v
-12 fixture tests cover recovery, idempotency, changed media, scope, caption matching and performance review gates. They do not prove model-generated character quality.
+14 fixture tests cover recovery, idempotency, changed media, scope, caption matching and performance review gates. They do not prove model-generated character quality.
