@@ -46,10 +46,26 @@ The installer stops before changing entrypoints if dependency/model/tests fail.
 The script is saved into the local production studio and a clearly named Desktop
 folder. No provider generation or publishing is started.
 
-The follow-up remote connection dropped before the dependency installation result
-could be confirmed. Therefore this installer is prepared and syntax-checked, but
-live application wiring and microphone acceptance are NOT claimed as completed.
-Read `data/realtime-live-install.json` and the local install logs after running it.
+The connection recovered during deployment. The initial full dependency download
+failed because the laptop's DNS/internet dropped. Deployment then used
+`--reuse-existing-ml`: the working local NumPy/ONNX/CTranslate2/Whisper versions
+were preserved, and only PyAudio and soxr were installed in the isolated environment.
+The existing local Silero graph and speech model were reused; no model download
+or paid generation was required.
+
+Windows verification passed all 24 tests, including an actual 3840x2160 encode,
+audio/subtitle QA and measured scene-cut selection. The authenticated render API
+responds. The new listener opened microphone device 1 at 16000Hz, with zero
+recorded audio drops, STT errors and dispatch errors at the verification snapshot.
+Actual user-spoken accuracy and human barge-in acceptance remain pending.
+
+The source guards, checkpoint and tests are retained. On this installation use:
+
+```powershell
+python install_live.py --root "C:\path\to\Zoya-Agent-v0.7-Control-Centre" --apply --reuse-existing-ml
+```
+
+Read `data/realtime-live-install.json` and install logs for the local evidence.
 If rollback is needed, restore `app.py` and `zoya_desktop.py` from the reported
 checkpoint and remove `data/realtime-enabled.json` before restarting. Do not
 restore the database snapshot over newer user work without a separate review.
@@ -295,9 +311,9 @@ self.realtime_voice.start()
 
 `enqueue_typed_command` above is the ONE application-specific binding: replace
 that name with the existing typed-input enqueue function; do not create a second
-planner or call a blocking LLM from the Tk main thread. The live desktop source
-could not be inspected because its remote connection timed out, so an exact
-method name is deliberately not asserted here.
+planner or call a blocking LLM from the Tk main thread. The provided `install_live.py` and `realtime_desktop.py` now bind the inspected
+installation directly to `Desktop.submit`; the generic callback example above
+is retained for other desktop implementations.
 
 Replace the current blocking `play_mp3(path)` implementation with playback through
 `self.realtime_player`. For each asynchronous TTS turn, reserve its token BEFORE
@@ -360,13 +376,16 @@ duration, full decode, dimensions and red-to-blue scene selection at measured
 timeline positions. Actual bundled Silero v6 inference/reset passes. Windows
 CPython3.13 binary wheels for pinned runtime dependencies resolve/download.
 
-Still required on the laptop: actual package installation, microphone selection,
-Hindi/Urdu/English accuracy, end-of-speech latency under render load, speaker/AEC
-behavior, physical playback interruption, typed-handler binding and one complete
-real-voice 4K acceptance video. Do not call this deployment production-verified
-until these checks pass. No existing working installation was overwritten by this
-source package.
+Still required on the laptop: human-spoken Hindi/Urdu/English accuracy,
+end-of-speech latency under render load, speaker/AEC behavior, human barge-in
+acceptance and one complete character-performance 4K acceptance video. Do not call this deployment production-verified
+until these checks pass. Existing entrypoints were updated only after a checkpoint and passing Windows
+tests; provider settings and prior outputs were preserved.
 
 Official references: https://github.com/SYSTRAN/faster-whisper ;
 https://github.com/snakers4/silero-vad ; https://pypi.org/project/PyAudio/ ;
 https://ffmpeg.org/ffmpeg-filters.html .
+
+Final Windows checks: saved narration produced 27 aligned timestamp units; the
+actual output stream opened, stop returned in 143.22ms, and a late voice result
+was rejected. This is mechanism verification, not a human-spoken barge-in test.
