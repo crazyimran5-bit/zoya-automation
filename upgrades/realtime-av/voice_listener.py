@@ -242,6 +242,8 @@ class VoiceListener:
         self.cfg, self.on_text, self.on_speech_start = config, on_text, on_speech_start
         self.vad_factory, self.model_factory = vad_factory, model_factory
         self.stop_event, self.interrupt_event = threading.Event(), threading.Event()
+        self.enabled = threading.Event()
+        self.enabled.set()
         self.raw = queue.Queue(maxsize=32)
         self.utterances = queue.Queue(maxsize=2)
         self.threads = []
@@ -253,6 +255,21 @@ class VoiceListener:
     def status(self):
         with self._lock:
             return dict(self._status)
+
+    def set_enabled(self, enabled: bool):
+        """Mute/lock gating: invalidate queued speech and discard incoming PCM."""
+        if bool(enabled) == self.enabled.is_set():
+            return
+        with self._lock:
+            self._epoch += 1
+        if enabled:
+            self.enabled.set()
+        else:
+            self.enabled.clear()
+        for q in (self.raw, self.utterances):
+            while True:
+                try: q.get_nowait()
+                except queue.Empty: break
 
     def _update(self, **values):
         with self._lock:
@@ -310,9 +327,14 @@ class VoiceListener:
                 pa = pyaudio.PyAudio()
                 index, rate = choose_device(pa, self.cfg.device_index)
                 block = max(128, round(rate*FRAME/RATE))
+                last_frame = time.monotonic()
                 def callback(data, frame_count, time_info, status):
+                    nonlocal last_frame
+                    last_frame = time.monotonic()
                     if self.stop_event.is_set():
                         return None, pyaudio.paComplete
+                    if not self.enabled.is_set():
+                        return None, pyaudio.paContinue
                     # O(1), bounded; never run VAD, STT, HTTP or file I/O here.
                     try:
                         self.raw.put_nowait((data, rate, time.monotonic()))
@@ -327,7 +349,7 @@ class VoiceListener:
                 self._update(state='listening', device_index=index, sample_rate=rate)
                 stream.start_stream(); retry = .5
                 while not self.stop_event.wait(.1):
-                    if not stream.is_active():
+                    if not stream.is_active() or time.monotonic()-last_frame > 2:
                         raise OSError('Microphone stream stopped')
             except Exception as exc:
                 LOG.warning('Microphone unavailable (%s); retrying', type(exc).__name__)
@@ -348,6 +370,10 @@ class VoiceListener:
         pending = np.zeros(0, dtype=np.float32)
         source_rate = None; resampler = None; previous_drop = 0; last_capture = None
         while not self.stop_event.is_set():
+            if not self.enabled.is_set():
+                segmenter.reset(); self.vad.reset(); pending = np.zeros(0, dtype=np.float32)
+                self.stop_event.wait(.05)
+                continue
             try:
                 data, rate, captured = self.raw.get(timeout=.1)
             except queue.Empty:
@@ -372,7 +398,10 @@ class VoiceListener:
                 pending = np.concatenate((pending, x))
                 while pending.size >= FRAME:
                     frame = pending[:FRAME].copy(); pending = pending[FRAME:]
-                    started, utterance, forced = segmenter.feed(frame, self.vad.probability(frame))
+                    probability=self.vad.probability(frame)
+                    self._update(last_rms=float(np.sqrt(np.mean(frame*frame))),
+                                 last_vad_probability=probability)
+                    started, utterance, forced = segmenter.feed(frame, probability)
                     if started:
                         with self._lock:
                             self._epoch += 1
@@ -428,7 +457,7 @@ class VoiceListener:
                 self._increment('stt_errors')
                 LOG.warning('Transcription failed (%s)', type(exc).__name__); continue
             with self._lock: current = self._epoch
-            if not text or epoch != current or self.stop_event.is_set():
+            if not text or epoch != current or self.stop_event.is_set() or not self.enabled.is_set():
                 continue
             if len(text) > 4000:
                 self._increment('rejected_transcripts'); continue
