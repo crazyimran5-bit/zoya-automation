@@ -26,4 +26,9 @@ Source resolution is recorded separately: exporting at 4K can upscale a lower-re
 
 ## Validation
 python -m unittest test_production_studio -v
-14 fixture tests cover recovery, idempotency, changed media, scope, caption matching and performance review gates. They do not prove model-generated character quality.
+18 fixture tests cover recovery, idempotency, changed media, scope, caption matching and performance review gates. They do not prove model-generated character quality.
+
+## Connector submission journal
+Exact payload, handoff hash, quote and available credits are saved before dispatch. submission-begin atomically claims a prepared attempt. A returned provider job ID is bound to that attempt and survives restart. Interrupted submitting attempts become submission_unknown and cannot be automatically replayed. Unknown outcomes must be reconciled against the original provider job. An insufficient-credit attempt cannot enter submitting.
+
+18 workflow fixture tests cover these rules in addition to the original recovery and quality gates. This is durable supervised connector orchestration, not a laptop-side Higgsfield API client.
