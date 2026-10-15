@@ -59,6 +59,24 @@ class WorkflowTests(unittest.TestCase):
   with patch.dict('sys.modules',{'whisper_backend':N(WhisperModel=lambda *a,**k:fake)}):
    with self.assertRaises(ValueError):self.s.auto_captions(self.jid)
   self.assertEqual(self.s.get(self.jid)['status'],'awaiting_captions')
+ def test_insufficient_credit_never_submits(self):
+  p=self.s.prepare_submission(self.jid,0,{'model':'kling3_0','prompt':'test','duration':1},30,10)
+  self.assertEqual(p['status'],'blocked_insufficient_credits')
+  with self.assertRaises(ValueError):self.s.begin_submission(self.jid,0,p['attempt_key'])
+ def test_submission_intent_cannot_replay(self):
+  p=self.s.prepare_submission(self.jid,0,{'model':'kling3_0','prompt':'test','duration':1},30,30)
+  self.s.begin_submission(self.jid,0,p['attempt_key'])
+  with self.assertRaises(ValueError):self.s.begin_submission(self.jid,0,p['attempt_key'])
+ def test_provider_id_survives_restart(self):
+  p=self.s.prepare_submission(self.jid,0,{'model':'kling3_0','prompt':'test','duration':1},30,30)
+  self.s.begin_submission(self.jid,0,p['attempt_key']);self.s.finish_submission(self.jid,0,p['attempt_key'],'real-returned-id')
+  j=Studio(self.t.name).get(self.jid);self.assertEqual(j['state']['scenes']['0']['provider_job_id'],'real-returned-id')
+  with self.assertRaises(ValueError):self.s.finish_submission(self.jid,0,p['attempt_key'],'duplicate')
+ def test_interrupted_submission_requires_reconciliation(self):
+  p=self.s.prepare_submission(self.jid,0,{'model':'kling3_0','prompt':'test','duration':1},30,30)
+  self.s.begin_submission(self.jid,0,p['attempt_key'])
+  new=Studio(self.t.name);self.assertEqual(new.get(self.jid)['state']['provider_requests']['0']['status'],'submission_unknown')
+  with self.assertRaises(ValueError):new.begin_submission(self.jid,0,p['attempt_key'])
  def test_no_generation_from_handoff(self):
   h=self.s.handoff(self.jid,0);self.assertFalse(h['submitted']);self.assertEqual(self.s.get(self.jid)['status'],'awaiting_performance')
 if __name__=='__main__':unittest.main()
