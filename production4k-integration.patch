@@ -19,7 +19,7 @@
              if self.headers.get('X-Zoya-Token')!=token:
                  return self.send(403,{'error':'Invalid session'})
              if path=='/api/voice/audio':
-@@ -228,6 +233,22 @@
+@@ -228,6 +233,24 @@
                      result=voice_session.plan()
                  elif path=='/api/voice/approve':
                      result=voice_session.approve(p.get('id'),p.get('hash'))
@@ -35,6 +35,8 @@
 +                    result=studio.accept_scene(p.get('id'),p.get('scene'),p.get('receipt'))
 +                elif path=='/api/studio/captions':
 +                    result=studio.captions(p.get('id'),p.get('segments'))
++                elif path=='/api/studio/auto-captions':
++                    result=studio.auto_captions(p.get('id'))
 +                elif path=='/api/studio/render':
 +                    result=studio.render(p.get('id'))
 +                elif path=='/api/studio/review':
