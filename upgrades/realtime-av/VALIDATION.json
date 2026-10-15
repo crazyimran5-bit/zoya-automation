@@ -1,7 +1,7 @@
 {
-  "date_utc": "2026-10-15T19:11:47.217775+00:00",
+  "date_utc": "2026-10-15T20:21:22.923829+00:00",
   "test_runtime": "3.12.14 Linux",
-  "unit_tests_passed": 21,
+  "unit_tests_passed": 23,
   "opt_in_encode_tests": [
     {
       "resolution": "3840x2160",
@@ -20,17 +20,32 @@
   "silero_v6_real_inference": "passed",
   "silero_sha256": "4cbf549b8326f60f80f2536d9eefeb450a9abe83365a098031c89719f1be17d2",
   "windows_cp313_wheels": "Pinned runtime wheels and dependency resolution successfully downloaded",
-  "windows_laptop_deployment": "not performed; Remote Desktop Commander execution timed out",
+  "windows_laptop_deployment": "Actual source inspected; source payload staging confirmed. Dependency-installer request returned PID but final outcome is unknown after remote disconnection. New entrypoint adapter has not been applied or verified.",
   "physical_microphone_and_barge_in": "not tested",
   "optional_whisper_download": "Stopped/blocked by automatic approval review due to unexpected Microsoft telemetry connection; not retried. ONNX telemetry is disabled in delivered code.",
   "sha256": {
     "video_engine.py": "432834136a391a513d60529059b8329a68153152d8ddad6ea66ec0f142831367",
-    "voice_listener.py": "a87accfd9c4ac48d7e9d036756f12402f9d80cea4f788cc50b50e8eeafddb919",
+    "voice_listener.py": "71879deadbd9ed0ccd95a77f910ea53fdc58fef5c211f8eb6b9c60d89e96de20",
     "service_integration.py": "a51b25f98fd59dec51721342da66add5c2be8b2982feb7d9ad2705151b1b1130",
+    "realtime_desktop.py": "85b9226c39ba356a6f56d8cfd907126013ee8bcda3cb6cb6e33e3b7a5e1e00b1",
+    "install_live.py": "4256915a864770d8a7e1f6b72eed1b7ad4cda631072c8961343e8e9f99b8d7f6",
     "prepare_models.py": "dad8aeed071be53ac6f08b76ba2ffcef9e8ef6976b1586d3508555b7dcd313be",
+    "test_upgrade.py": "0fa563f54d86cee7796ecd7d8bcb3be5a18d0f36212b2639904e31b03c84070c",
     "requirements.txt": "2911533034f4ddb5661dc4ee7df4387531d9a9507aecee706f46d05b1c987de4",
+    "README.md": "99b5d96431eccfb8e112fd746005fb1f0810247458556ed6c039523ba944ee11",
     "example_manifest.json": "c075a912555bd05b1be2cd5de960702f5b24c6d62ce551388097d6c90b34f644",
-    "test_upgrade.py": "5880cb0ac57125cee5d467d28d469b74c67e4c19748957abb8f7f712b227f072",
-    "README.md": "df43ea4a23dc1d8a7a870cab22b9004585be84b373dc14c33968f6256342b377"
+    "ready-script.md": "b91d2edd0bf4bccba79e3d2ce2b447a7be07b4f933bea258bc4bde12c0d8dcfe",
+    "ready-script.json": "6de2ba0ac2393bbe8d9d3444337dd6ffad1bdbefea59c065d6f4e613c85234bd"
+  },
+  "installer": "Syntax-checked; source-guarded; Windows execution still pending",
+  "ready_script": {
+    "title": "The Red Ball Team",
+    "planned_seconds": 30,
+    "scenes": 6,
+    "characters": [
+      "Armaan",
+      "Ismat"
+    ],
+    "generated_video": false
   }
 }
