@@ -15,6 +15,44 @@ with tests, not a claim that the laptop microphone has passed live acceptance.
 | `requirements.txt` | Pinned runtime dependencies |
 | `example_manifest.json` | Asset-to-dialogue mapping example; sample times are illustrative, not real alignment |
 | `test_upgrade.py` | Timing, VAD, stale audio, recovery and actual FFmpeg integration tests |
+| `realtime_desktop.py` | Adapter for the inspected Windows `Desktop.submit` / `Desktop.reply` implementation |
+| `install_live.py` | Scoped backup, dependency installation, source-checked wiring, tests and restart |
+| `ready-script.md` / `ready-script.json` | Reviewed 30-second Armaan–Ismat script; planned timings only |
+
+## Follow-up installer for the inspected Windows installation
+
+The desktop source was inspected in the follow-up session. It discards microphone
+frames while `busy`, plays audio through blocking Windows MCI, and marshals typed
+commands through `Desktop.submit`. The included adapter preserves the wake window,
+mute/lock state and existing command/approval handler. It keeps capture active
+during replies, cancels stale TTS playback, and queues one subsequent voice command
+while the old agent operation finishes safely. It does not force-kill an agent
+operation or promise immediate LLM cancellation.
+
+Extract this complete package and run with the existing Python interpreter:
+
+```powershell
+python install_live.py --root "C:\path\to\Zoya-Agent-v0.7-Control-Centre"
+python install_live.py --root "C:\path\to\Zoya-Agent-v0.7-Control-Centre" --apply
+```
+
+The first command checks source patterns without changing application files.
+The second saves a source/SQLite checkpoint, creates a project-scoped virtual
+environment with access to existing dependencies, installs pinned wheels, reuses
+the local Whisper model, validates Silero, runs unit tests and an actual 4K export,
+then updates the two application entrypoints and restarts only this installation.
+The desktop entrypoint redirects future starts into the isolated environment.
+The installer stops before changing entrypoints if dependency/model/tests fail.
+The script is saved into the local production studio and a clearly named Desktop
+folder. No provider generation or publishing is started.
+
+The follow-up remote connection dropped before the dependency installation result
+could be confirmed. Therefore this installer is prepared and syntax-checked, but
+live application wiring and microphone acceptance are NOT claimed as completed.
+Read `data/realtime-live-install.json` and the local install logs after running it.
+If rollback is needed, restore `app.py` and `zoya_desktop.py` from the reported
+checkpoint and remove `data/realtime-enabled.json` before restarting. Do not
+restore the database snapshot over newer user work without a separate review.
 
 ## 1. Install in an isolated environment
 
@@ -316,7 +354,7 @@ $env:ZOYA_TEST_CODEC = 'h265'
 .\.venv\Scripts\python.exe -m unittest test_upgrade.FFmpegTests -v
 ```
 
-Recorded in the build environment: 21 unit tests pass; actual H.264/30fps and
+Recorded in the build environment: 23 unit tests pass; actual H.264/30fps and
 H.265/60fps UHD encode tests pass. The integration test checks audio, captions,
 duration, full decode, dimensions and red-to-blue scene selection at measured
 timeline positions. Actual bundled Silero v6 inference/reset passes. Windows
