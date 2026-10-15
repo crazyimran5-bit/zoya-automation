@@ -76,6 +76,14 @@ class Studio:
                 j=self._get(c,row['id']);j['status']='render_interrupted'
                 j['state']['blocker']='Local render interrupted. Resume revalidates all hashes and reuses completed output only after QA.'
                 self.save(c,j)
+            for row in c.execute('SELECT id FROM jobs').fetchall():
+                j=self._get(c,row['id']);changed=False
+                for attempt in j['state'].get('provider_requests',{}).values():
+                    if attempt['status']=='submitting':
+                        attempt['status']='submission_unknown';changed=True
+                if changed:
+                    j['state']['blocker']='Interrupted provider submission. Reconcile original job; no automatic resubmission.'
+                    self.save(c,j)
     def create(self,script,request_id):
         validate_script(script)
         if not isinstance(request_id,str) or not 1<=len(request_id)<=100: raise ValueError('Request ID required')
@@ -98,6 +106,53 @@ class Studio:
           'provider':'Higgsfield','submission':'external_connector_required','submitted':False}
         payload['request_key']=digest(payload)
         return payload
+    def prepare_submission(self,jid,index,params,credits_required,credits_available):
+        h=self.handoff(jid,index)
+        if not isinstance(params,dict) or not isinstance(params.get('model'),str) or not isinstance(params.get('prompt'),str) or not params['prompt'].strip(): raise ValueError('Exact provider payload required')
+        if params.get('count',1)!=1 or params.get('duration')!=h['scene_brief']['duration']: raise ValueError('One output with approved scene duration required')
+        if not finite(credits_required) or not finite(credits_available) or credits_required<0 or credits_available<0: raise ValueError('Fresh credit quote and balance required')
+        # Copy and JSON-validate so caller cannot mutate the bound payload later.
+        params=json.loads(json.dumps(params,allow_nan=False))
+        proposal={'job_id':jid,'scene':index,'handoff_key':h['request_key'],'params':params,'credits_required':credits_required,'credits_available':credits_available,'quoted_at':time.time()}
+        with self.db() as c:
+            c.execute('BEGIN IMMEDIATE');j=self._get(c,jid)
+            requests=j['state'].setdefault('provider_requests',{});old=requests.get(str(index))
+            if old and old['status'] in ('submitting','submission_unknown','submitted'):
+                if old['params']!=params: raise ValueError('Provider attempt is unresolved or already submitted; do not replace it')
+                return old
+            proposal['attempt_key']=digest(proposal)
+            proposal['status']='prepared' if credits_available>=credits_required else 'blocked_insufficient_credits'
+            requests[str(index)]=proposal
+            j['state']['blocker']='Insufficient Higgsfield credits' if credits_available<credits_required else 'Connector submission not started'
+            self.save(c,j)
+        return proposal
+    def begin_submission(self,jid,index,attempt_key):
+        with self.db() as c:
+            c.execute('BEGIN IMMEDIATE');j=self._get(c,jid);p=j['state'].get('provider_requests',{}).get(str(index))
+            if not p or p['attempt_key']!=attempt_key or p['status']!='prepared': raise ValueError('No fresh prepared submission; never replay an uncertain attempt')
+            if time.time()-p['quoted_at']>300: raise ValueError('Credit quote expired')
+            if p['credits_available']<p['credits_required']: raise ValueError('Insufficient credits')
+            if j['state']['scenes'].get(str(index)): raise ValueError('Scene already has a provider job')
+            p['status']='submitting';p['started_at']=time.time();j['state']['blocker']='Awaiting connector response; do not resubmit';self.save(c,j)
+            return p
+    def finish_submission(self,jid,index,attempt_key,provider_job_id):
+        if not isinstance(provider_job_id,str) or not 1<=len(provider_job_id)<=200: raise ValueError('Returned provider job ID required')
+        with self.db() as c:
+            c.execute('BEGIN IMMEDIATE');j=self._get(c,jid);p=j['state'].get('provider_requests',{}).get(str(index))
+            if not p or p['attempt_key']!=attempt_key or p['status'] not in ('submitting','submission_unknown','submitted'): raise ValueError('No matching connector attempt')
+            if p['status']=='submitted':
+                if p.get('provider_job_id')!=provider_job_id: raise ValueError('Provider job already recorded')
+                return j
+            old=j['state']['scenes'].get(str(index))
+            if old and old['provider_job_id']!=provider_job_id: raise ValueError('Provider job already recorded; reconcile duplicate response')
+            if not old:j['state']['scenes'][str(index)]={'provider_job_id':provider_job_id,'request_key':p['handoff_key'],'status':'submitted'}
+            p['status']='submitted';p['provider_job_id']=provider_job_id;j['status']='awaiting_provider';j['state']['blocker']='Waiting on recorded provider job; no resubmission';self.save(c,j);return j
+    def mark_submission_unknown(self,jid,index,attempt_key):
+        with self.db() as c:
+            c.execute('BEGIN IMMEDIATE');j=self._get(c,jid);p=j['state'].get('provider_requests',{}).get(str(index))
+            if not p or p['attempt_key']!=attempt_key or p['status']!='submitting': raise ValueError('No unresolved submitting attempt')
+            p['status']='submission_unknown';j['state']['blocker']='Connector outcome unknown. Reconcile original generation; never auto-resubmit.';self.save(c,j);return j
+
     def record_submission(self,jid,index,provider_job_id,request_key):
         h=self.handoff(jid,index)
         if request_key!=h['request_key']: raise ValueError('Changed handoff')
