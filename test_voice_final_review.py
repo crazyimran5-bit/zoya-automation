@@ -13,9 +13,11 @@ class VoiceReviewTests(unittest.TestCase):
                 calls.append(path)
                 if path.endswith('/status'):
                     return io.BytesIO(b'{"provider":"ollama"}')
+                if path.endswith('/tools'):
+                    return io.BytesIO(b'{"tools":[{"name":"get_system_info","enabled":true}]}')
                 return io.BytesIO(b'data: {"type":"text","content":"This answer was produced without tools: timeout"}\n\ndata: {"type":"done"}\n')
             with patch.object(bridge,'ROOT',root), patch.object(bridge,'request',request):
-                result=bridge.dispatch('read-only fixture')
+                result=bridge.dispatch('read-only fixture', required_tools=('get_system_info',))
             self.assertEqual(result['status'],'needs_review')
             self.assertEqual(result['reason'],'local_model_tool_timeout')
             self.assertFalse(result['tool_execution_verified'])
@@ -29,7 +31,7 @@ class VoiceReviewTests(unittest.TestCase):
             def request(path,body=None,method=None):
                 calls.append(path); return io.BytesIO(b'{"provider":"openai"}')
             with patch.object(bridge,'ROOT',root),patch.object(bridge,'request',request):
-                result=bridge.dispatch('fixture')
+                result=bridge.dispatch('fixture', required_tools=('get_system_info',))
             self.assertEqual(result['status'],'awaiting_local_provider')
             self.assertEqual(calls,['/api/cli/status'])
 
@@ -59,3 +61,4 @@ class VoiceReviewTests(unittest.TestCase):
         self.assertIn("self.health.get('last_voice_error'",ast.unparse(reply))
 
 if __name__=='__main__': unittest.main()
+
